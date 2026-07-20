@@ -10,6 +10,9 @@ import {
   ensureCenterAnchor,
   squarePrice,
   readOnly,
+  connectablePairs,
+  getConnector,
+  setConnector,
 } from '../state.js';
 import { SQUARE_TYPES, squareType } from '../catalog.js';
 
@@ -80,14 +83,31 @@ export function render(app) {
 
   const layout = h('div', { class: 'configure-layout' }, [board, side]);
 
-  const nav = wizardNav({
-    onBack: () => router.go('anchor'),
-    onNext: () => router.go('connect'),
-    nextLabel: 'Connect squares →',
-    nextDisabled: design.squares.length < 1,
-  });
+  const userSquares = design.squares.filter((s) => !s.locked).length;
+
+  const back = h('button', { class: 'btn ghost', onclick: () => router.go('anchor') }, '← Anchor');
+  const connectBtn = h('button', { class: 'btn', onclick: () => router.go('connect') }, 'Connect squares →');
+  const doneBtn = h('button', { class: 'btn primary', onclick: () => finishDesign() }, '✓ Done');
+  if (userSquares < 1) {
+    connectBtn.disabled = true;
+    doneBtn.disabled = true;
+    doneBtn.title = 'Add at least one square first';
+  }
+
+  const nav = h('div', { class: 'wizard-nav' }, [back, h('div', { class: 'nav-group' }, [connectBtn, doneBtn])]);
 
   app.append(h('div', { class: 'screen' }, [head, layout, nav]));
+}
+
+// Finish the design: apply sensible default connectors (so the platform is
+// fully linked even if the user skipped the Connect step) and jump to Review.
+function finishDesign() {
+  for (const p of connectablePairs()) {
+    if (!getConnector(p.a.id, p.b.id)) {
+      setConnector(p.a.id, p.b.id, p.distance === 1 ? 'direct' : 'bridge');
+    }
+  }
+  router.go('summary');
 }
 
 // ---- read-only shared view ----------------------------------------------

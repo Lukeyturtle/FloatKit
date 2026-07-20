@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FloatKit — Build your own floating platform</title>
+    <meta name="description" content="Design your own modular inflatable floating platform — pick an anchor, snap squares together, and share your build." />
+    <!-- Open Graph so shared links preview nicely -->
+    <meta property="og:title" content="FloatKit — Build your own floating platform" />
+    <meta property="og:description" content="Design your own modular inflatable floating platform and share your build." />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🏝️</text></svg>" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand" id="brand">🏝️ FloatKit</div>
+      <nav class="progress" id="progress">
+        <div class="progress-step" data-step="1"><span>1</span><span class="ps-label">Anchor</span></div>
+        <div class="progress-step" data-step="2"><span>2</span><span class="ps-label">Configure</span></div>
+        <div class="progress-step" data-step="3"><span>3</span><span class="ps-label">Connect</span></div>
+        <div class="progress-step" data-step="4"><span>4</span><span class="ps-label">Review</span></div>
+      </nav>
+    </header>
+
+    <div class="sharebanner" id="sharebanner" hidden>
+      <span class="sb-text">👀 You’re viewing a <strong>shared design</strong> — read-only. Click squares to explore it.</span>
+      <button class="btn primary" id="remix-btn">✏️ Remix this design</button>
+    </div>
+
+    <main id="app"></main>
+
+    <footer class="sitefoot">
+      <span>FloatKit is a concept prototype · runs entirely in your browser</span>
+    </footer>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

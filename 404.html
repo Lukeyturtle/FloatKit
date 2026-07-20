@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FloatKit</title>
+    <script>
+      // GitHub Pages serves this file for unknown paths. If someone visits
+      // .../FloatKit/123456 (a 6-digit code appended to the URL), rewrite it to
+      // the app with the code as a query param so the static site can load it.
+      (function () {
+        var parts = location.pathname.split('/').filter(Boolean);
+        var last = parts.length ? parts[parts.length - 1] : '';
+        var base = '/' + parts.slice(0, -1).join('/');
+        if (base === '/') base = '';
+        if (/^\d{6}$/.test(last)) {
+          location.replace(base + '/?c=' + last + location.hash);
+        } else {
+          location.replace((base || '') + '/');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting…</p>
+  </body>
+</html>

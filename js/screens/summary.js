@@ -1,7 +1,7 @@
 import { router } from '../router.js';
 import { h, platformPreview, statsPanel, money, downloadPNG, squareLabel, squareDetail, openModal } from '../render.js';
-import { design, computeStats, squarePrice, readOnly, remixSharedDesign, roofedSquares } from '../state.js';
-import { anchorById, connectorById, squareType, accessoryById, ROOF } from '../catalog.js';
+import { design, computeStats, squarePrice, readOnly, remixSharedDesign, allAccessoryTotals } from '../state.js';
+import { anchorById, connectorById, squareType, ACCESSORIES, ROOF } from '../catalog.js';
 import { generateCode, encodeDesign, buildShareLink, buildPrefillUrl } from '../share.js';
 import { formConfigured } from '../config.js';
 
@@ -29,13 +29,12 @@ export function render(app) {
     if (!info || c.type === 'direct') continue; // direct is free/implicit
     items.push(lineItem(info.icon, info.name + ' connector', '', info.price));
   }
-  // accessories
-  const roofs = roofedSquares().length;
-  if (roofs) items.push(lineItem(ROOF.icon, `${ROOF.name} × ${roofs}`, '', ROOF.price * roofs));
-  for (const [id, count] of Object.entries(design.accessories || {})) {
-    const a = accessoryById(id);
-    if (!a || !count) continue;
-    items.push(lineItem(a.icon, `${a.name} × ${count}`, '', a.price * count));
+  // accessories (aggregated across every tile)
+  const totals = allAccessoryTotals();
+  for (const acc of [ROOF, ...ACCESSORIES]) {
+    const n = totals[acc.id];
+    if (!n) continue;
+    items.push(lineItem(acc.icon, `${acc.name} × ${n}`, '', acc.price * n));
   }
 
   const list = h('div', { class: 'invoice card' }, [

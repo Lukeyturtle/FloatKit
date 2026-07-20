@@ -34,6 +34,12 @@ export function h(tag, attrs = {}, children = []) {
 
 export const money = (n) => '$' + Math.round(n).toLocaleString('en-US');
 
+// accessory helpers (accessories live in sq.config.accessories = { id: count })
+const tileAcc = (sq) => (sq && sq.config && sq.config.accessories) || {};
+export const tileHasRoof = (sq) => !!tileAcc(sq).roof;
+export const tileItemCountNonRoof = (sq) =>
+  Object.entries(tileAcc(sq)).reduce((n, [id, c]) => n + (id === 'roof' ? 0 : c), 0);
+
 // The chosen sub-option for a customizable square (adventure/relax), if any.
 export function squareOption(sq) {
   const cfg = sq.config || {};
@@ -112,7 +118,11 @@ export function platformPreview(opts = {}) {
           [
             h('span', { class: 'tile-icon' }, squareGlyph(sq)),
             h('span', { class: 'tile-name' }, squareLabel(sq)),
-            sq.config && sq.config.roof && h('span', { class: 'roof-badge', title: 'Roof / cabana' }, '⛺'),
+            tileHasRoof(sq) && h('span', { class: 'roof-badge', title: 'Roof / cabana' }, '⛺'),
+            (() => {
+              const n = tileItemCountNonRoof(sq);
+              return n ? h('span', { class: 'acc-badge', title: n + ' accessor' + (n === 1 ? 'y' : 'ies') }, String(n)) : null;
+            })(),
           ]
         );
         if (opts.selectedId === sq.id) tile.classList.add('selected');
@@ -274,9 +284,16 @@ export function downloadPNG(filename = 'my-floatkit-platform.png') {
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = 'rgba(20,40,60,0.85)';
     ctx.fillText(squareShortLabel(sq), x + w / 2, y + w - 14);
-    if (sq.config && sq.config.roof) {
+    if (tileHasRoof(sq)) {
       ctx.font = '18px serif';
       ctx.fillText('⛺', x + w - 12, y + 12);
+    }
+    const accN = tileItemCountNonRoof(sq);
+    if (accN) {
+      ctx.font = '700 13px system-ui, sans-serif';
+      ctx.fillStyle = '#0d3b4f';
+      ctx.fillText('•' + accN, x + 14, y + 12);
+      ctx.fillStyle = 'rgba(20,40,60,0.85)';
     }
   }
 

@@ -1,7 +1,20 @@
 import { router } from '../router.js';
-import { h, platformPreview, statsPanel, wizardNav, money } from '../render.js';
-import { design, setAccessory, toggleRoof, roofedSquares, readOnly } from '../state.js';
-import { ACCESSORIES, ROOF } from '../catalog.js';
+import { h, platformPreview, statsPanel, wizardNav, money, openModal, squareLabel, squareDetail, squareGlyph } from '../render.js';
+import {
+  design,
+  readOnly,
+  placeAccessory,
+  accessoryAllowed,
+  accessoryBlockReason,
+  tileAccessories,
+  tileBlocksAccessories,
+  allAccessoryTotals,
+} from '../state.js';
+import { ACCESSORIES, ROOF, WATERSPORTS_ONLY_IDS, squareType, accessoryById } from '../catalog.js';
+
+const PLACEABLE = [ROOF, ...ACCESSORIES];
+
+let mode = 'build'; // 'build' | 'preview'
 
 const rerender = (app) => {
   app.innerHTML = '';
@@ -9,110 +22,141 @@ const rerender = (app) => {
 };
 
 export function render(app) {
-  if (readOnly) return renderReadOnly(app);
+  const previewing = readOnly || mode === 'preview';
 
   const head = h('div', { class: 'screen-head' }, [
-    h('h2', {}, 'Add accessories'),
-    h('p', { class: 'muted' }, 'Kit out your platform. Set a quantity for each item — and tap any tile to drop a ⛺ roof on it.'),
+    h('h2', {}, readOnly ? 'Accessories' : 'Add accessories'),
+    h('p', { class: 'muted' }, previewing
+      ? 'Click any tile to see what’s on it.'
+      : 'Click a tile to add accessories to it. Some items only fit certain tiles.'),
+  ]);
+
+  const toolbar = h('div', { class: 'acc-toolbar' }, [
+    readOnly ? null : h('div', { class: 'mode-toggle' }, [
+      modeBtn(app, 'build', '🔧 Build'),
+      modeBtn(app, 'preview', '👁 Preview'),
+    ]),
+    h('div', { class: 'board-hint' }, previewing ? '👁 Tap a tile to inspect it' : '🔧 Tap a tile to kit it out'),
   ]);
 
   const board = h('div', { class: 'board' }, [
-    h('div', { class: 'board-hint' }, '⛺ Tap a tile to add or remove a roof'),
+    toolbar,
     platformPreview({
       interactive: true,
       showConnectors: true,
-      onSquareClick: (sq) => {
-        toggleRoof(sq.id);
-        rerender(app);
-      },
+      onSquareClick: (sq) => (previewing ? openTilePreview(sq) : openTileBuild(sq, app)),
     }),
   ]);
 
-  const list = h('div', { class: 'acc-list card' }, [
-    h('h3', {}, 'Accessories'),
-    roofRow(),
-    ...ACCESSORIES.map((a) => accessoryRow(a, app)),
-  ]);
-
-  const side = h('div', { class: 'side' }, [statsPanel(), list]);
+  const side = h('div', { class: 'side' }, [statsPanel(), previewing ? placedSummary() : legendCard()]);
 
   const nav = wizardNav({
     onBack: () => router.go('connect'),
     backLabel: '← Back to connections',
     onNext: () => router.go('summary'),
-    nextLabel: 'Review platform →',
+    nextLabel: readOnly ? 'See the summary →' : 'Review platform →',
   });
 
   app.append(h('div', { class: 'screen' }, [head, h('div', { class: 'configure-layout' }, [board, side]), nav]));
 }
 
-function roofRow() {
-  const n = roofedSquares().length;
-  return h('div', { class: 'acc-row roof-row' }, [
-    h('span', { class: 'acc-icon' }, ROOF.icon),
-    h('div', { class: 'acc-body' }, [
-      h('strong', {}, ROOF.name),
-      h('span', { class: 'acc-price' }, `$${ROOF.price} each · tap tiles`),
-    ]),
-    h('span', { class: 'acc-count-badge' }, `${n} added`),
+function modeBtn(app, m, label) {
+  return h('button', {
+    class: 'mode-btn' + (mode === m ? ' active' : ''),
+    onclick: () => { mode = m; rerender(app); },
+  }, label);
+}
+
+// ---- Build: edit one tile's accessories ---------------------------------
+function openTileBuild(sq, app) {
+  const container = h('div', { class: 'tile-acc-editor' });
+  const redraw = () => {
+    container.innerHTML = '';
+    if (tileBlocksAccessories(sq)) {
+      container.append(h('p', { class: 'muted' }, `No accessories can go on this ${squareType(sq.type)?.name} tile.`));
+      return;
+    }
+    for (const acc of PLACEABLE) {
+      const allowed = accessoryAllowed(acc.id, sq);
+      const count = tileAccessories(sq)[acc.id] || 0;
+      container.append(
+        h('div', { class: 'acc-row' + (count ? ' has-count' : '') + (allowed ? '' : ' blocked') }, [
+          h('span', { class: 'acc-icon' }, acc.icon),
+          h('div', { class: 'acc-body' }, [
+            h('strong', {}, acc.name),
+            h('span', { class: 'acc-price' }, allowed ? money(acc.price) + ' each' : accessoryBlockReason(acc.id, sq)),
+          ]),
+          allowed
+            ? h('div', { class: 'stepper acc-stepper' }, [
+                h('button', { class: 'icon-btn', onclick: () => { placeAccessory(sq.id, acc.id, -1); redraw(); rerender(app); } }, '−'),
+                h('strong', {}, String(count)),
+                h('button', { class: 'icon-btn', onclick: () => { placeAccessory(sq.id, acc.id, 1); redraw(); rerender(app); } }, '+'),
+              ])
+            : h('span', { class: 'acc-blocked-tag' }, '🚫'),
+        ])
+      );
+    }
+  };
+  redraw();
+  openModal(container, { title: `${squareGlyph(sq)} ${squareLabel(sq)}` });
+}
+
+// ---- Preview: read-only look at one tile --------------------------------
+function openTilePreview(sq) {
+  const t = squareType(sq.type);
+  const entries = Object.entries(tileAccessories(sq)).filter(([, n]) => n > 0);
+  const detail = squareDetail(sq);
+  const body = h('div', { class: 'tile-acc-editor' }, [
+    t?.blurb && h('p', { class: 'muted' }, t.blurb),
+    detail && h('p', { class: 'fine' }, 'Setup: ' + detail),
+    h('h4', { class: 'tile-acc-head' }, 'On this tile'),
+    entries.length
+      ? h('div', {}, entries.map(([id, n]) =>
+          h('div', { class: 'acc-row has-count' }, [
+            h('span', { class: 'acc-icon' }, accessoryById(id)?.icon || '📦'),
+            h('div', { class: 'acc-body' }, [h('strong', {}, accessoryById(id)?.name || id)]),
+            h('span', { class: 'acc-count-badge' }, '× ' + n),
+          ])
+        ))
+      : h('p', { class: 'muted' }, 'Nothing placed here yet.'),
+  ]);
+  openModal(body, { title: `${squareGlyph(sq)} ${squareLabel(sq)}` });
+}
+
+// ---- side panels ---------------------------------------------------------
+function ruleText(id) {
+  if (WATERSPORTS_ONLY_IDS.includes(id)) return 'Watersports tiles';
+  if (id === 'docking') return 'Open-water side';
+  return 'Any tile';
+}
+
+function legendCard() {
+  return h('div', { class: 'card acc-legend' }, [
+    h('h3', {}, 'Accessories'),
+    ...PLACEABLE.map((acc) =>
+      h('div', { class: 'legend-row' }, [
+        h('span', { class: 'acc-icon' }, acc.icon),
+        h('div', { class: 'legend-body' }, [
+          h('strong', {}, acc.name),
+          h('span', { class: 'acc-price' }, money(acc.price) + ' each'),
+        ]),
+        h('span', { class: 'legend-rule' }, ruleText(acc.id)),
+      ])
+    ),
   ]);
 }
 
-function accessoryRow(a, app) {
-  const count = design.accessories[a.id] || 0;
-  return h('div', { class: 'acc-row' + (count ? ' has-count' : '') }, [
-    h('span', { class: 'acc-icon' }, a.icon),
-    h('div', { class: 'acc-body' }, [
-      h('strong', {}, a.name),
-      h('span', { class: 'acc-price' }, `$${a.price} each`),
-    ]),
-    h('div', { class: 'stepper acc-stepper' }, [
-      h('button', { class: 'icon-btn', onclick: () => { setAccessory(a.id, count - 1); rerender(app); } }, '−'),
-      h('strong', {}, String(count)),
-      h('button', { class: 'icon-btn', onclick: () => { setAccessory(a.id, count + 1); rerender(app); } }, '+'),
-    ]),
-  ]);
-}
-
-// ---- read-only shared view ----------------------------------------------
-function renderReadOnly(app) {
-  const head = h('div', { class: 'screen-head' }, [
-    h('h2', {}, 'Accessories'),
-    h('p', { class: 'muted' }, 'The gear that comes with this platform.'),
-  ]);
-
-  const roofs = roofedSquares().length;
-  const rows = ACCESSORIES.filter((a) => (design.accessories[a.id] || 0) > 0).map((a) =>
+function placedSummary() {
+  const totals = allAccessoryTotals();
+  const rows = PLACEABLE.filter((a) => totals[a.id]).map((a) =>
     h('div', { class: 'acc-row has-count' }, [
       h('span', { class: 'acc-icon' }, a.icon),
       h('div', { class: 'acc-body' }, [h('strong', {}, a.name), h('span', { class: 'acc-price' }, money(a.price) + ' each')]),
-      h('span', { class: 'acc-count-badge' }, `× ${design.accessories[a.id]}`),
+      h('span', { class: 'acc-count-badge' }, '× ' + totals[a.id]),
     ])
   );
-  if (roofs) {
-    rows.unshift(
-      h('div', { class: 'acc-row has-count' }, [
-        h('span', { class: 'acc-icon' }, ROOF.icon),
-        h('div', { class: 'acc-body' }, [h('strong', {}, ROOF.name), h('span', { class: 'acc-price' }, money(ROOF.price) + ' each')]),
-        h('span', { class: 'acc-count-badge' }, `× ${roofs}`),
-      ])
-    );
-  }
-
-  const list = h('div', { class: 'acc-list card' }, [
-    h('h3', {}, 'Accessories'),
-    rows.length ? h('div', {}, rows) : h('p', { class: 'muted' }, 'No accessories on this build.'),
+  return h('div', { class: 'card acc-list' }, [
+    h('h3', {}, 'Accessories placed'),
+    rows.length ? h('div', {}, rows) : h('p', { class: 'muted' }, 'No accessories placed yet.'),
   ]);
-
-  const board = h('div', { class: 'board' }, [platformPreview({ showConnectors: true })]);
-  const side = h('div', { class: 'side' }, [statsPanel(), list]);
-
-  const nav = wizardNav({
-    onBack: () => router.go('connect'),
-    backLabel: '← Back to connections',
-    onNext: () => router.go('summary'),
-    nextLabel: 'See the summary →',
-  });
-
-  app.append(h('div', { class: 'screen' }, [head, h('div', { class: 'configure-layout' }, [board, side]), nav]));
 }

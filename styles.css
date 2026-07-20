@@ -458,7 +458,7 @@ main { max-width: 1120px; margin: 0 auto; padding: 24px; }
 .acc-count-badge { font-weight: 800; color: var(--deep-2); font-size: 13px; white-space: nowrap; }
 .roof-row { background: var(--aqua-1); border-radius: 8px; padding: 8px; border-bottom: none; }
 
-/* roof badge on tiles */
+/* roof + accessory badges on tiles */
 .roof-badge {
   position: absolute;
   top: 2px; right: 3px;
@@ -466,6 +466,39 @@ main { max-width: 1120px; margin: 0 auto; padding: 24px; }
   line-height: 1;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
 }
+.acc-badge {
+  position: absolute;
+  bottom: 2px; left: 3px;
+  background: var(--deep);
+  color: #fff;
+  font-size: 9px; font-weight: 800;
+  min-width: 14px; height: 14px;
+  border-radius: 7px;
+  display: grid; place-items: center;
+  padding: 0 3px; line-height: 1;
+}
+
+/* build/preview toolbar */
+.acc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.acc-toolbar .board-hint { margin-bottom: 0; }
+.mode-toggle { display: inline-flex; background: #eef6f9; border-radius: 10px; padding: 3px; gap: 2px; }
+.mode-btn {
+  font: inherit; font-weight: 700; border: none; background: transparent;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; color: var(--muted);
+}
+.mode-btn.active { background: #fff; color: var(--deep); box-shadow: var(--shadow-sm); }
+
+/* per-tile accessory popup */
+.tile-acc-editor { display: flex; flex-direction: column; gap: 2px; max-height: 60vh; overflow-y: auto; }
+.tile-acc-head { margin: 12px 0 4px; font-size: 14px; }
+.acc-row.blocked { opacity: 0.55; }
+.acc-blocked-tag { font-size: 15px; padding: 0 8px; }
+
+/* accessory legend (build side panel) */
+.acc-legend .legend-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.acc-legend .legend-row:last-child { border-bottom: none; }
+.legend-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.legend-rule { font-size: 11px; font-weight: 700; color: var(--deep-2); background: #eef6f9; padding: 3px 7px; border-radius: 6px; white-space: nowrap; }
 
 .sitefoot { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 20px 50px; }
 

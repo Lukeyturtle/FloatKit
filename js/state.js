@@ -12,10 +12,13 @@ import {
   SQUARE_METERS,
   CENTER,
   ANCHOR_BLOCK,
-  ACCESSORIES,
-  ROOF,
+  GRID_COLS,
+  GRID_ROWS,
   accessoryById,
 } from './catalog.js';
+
+// Accessory ids that may only be placed on a Watersports tile.
+const WATERSPORTS_ONLY = ['kayak', 'paddleboard', 'paddle', 'donut'];
 
 const STORAGE_KEY = 'floatkit.design.v2';
 
@@ -26,9 +29,8 @@ const STORAGE_KEY = 'floatkit.design.v2';
 //   any:       { ladder?: bool, ziplineStation?: bool }  (add-ons)
 export const design = {
   anchor: null,
-  squares: [], // { id, x, y, type, config }
+  squares: [], // { id, x, y, type, config } — accessories live in config.accessories
   connectors: [], // { key, a, b, type }
-  accessories: {}, // { accessoryId: count } — the Roof lives on squares (config.roof)
   lastScreen: 'landing',
 };
 
@@ -49,7 +51,6 @@ export function save() {
         anchor: design.anchor,
         squares: design.squares,
         connectors: design.connectors,
-        accessories: design.accessories,
         lastScreen: design.lastScreen,
         _id,
       })
@@ -67,7 +68,6 @@ export function load() {
     design.anchor = data.anchor ?? null;
     design.squares = Array.isArray(data.squares) ? data.squares : [];
     design.connectors = Array.isArray(data.connectors) ? data.connectors : [];
-    design.accessories = data.accessories && typeof data.accessories === 'object' ? data.accessories : {};
     design.lastScreen = data.lastScreen ?? 'landing';
     _id = data._id ?? design.squares.length + 1;
     ensureCenterAnchor();
@@ -81,7 +81,6 @@ export function resetDesign() {
   design.anchor = null;
   design.squares = [];
   design.connectors = [];
-  design.accessories = {};
   design.lastScreen = 'landing';
   _id = 1;
   ensureCenterAnchor();
@@ -95,7 +94,6 @@ export function loadSharedDesign(obj) {
   design.anchor = obj.anchor ?? null;
   design.squares = Array.isArray(obj.squares) ? obj.squares : [];
   design.connectors = Array.isArray(obj.connectors) ? obj.connectors : [];
-  design.accessories = obj.accessories && typeof obj.accessories === 'object' ? obj.accessories : {};
   design.lastScreen = 'configure';
   _id = design.squares.length + 1;
   ensureCenterAnchor();
@@ -269,30 +267,81 @@ export function connectablePairs() {
   return pairs;
 }
 
-// ---- accessories ---------------------------------------------------------
-export function setAccessory(id, count) {
+// ---- accessories (placed per tile: sq.config.accessories = { id: count }) --
+
+// Does a tile touch open water on at least one side? (edge of grid or an empty
+// neighbouring cell counts as water.)
+export function hasWaterSideAccess(sq) {
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const nx = sq.x + dx;
+    const ny = sq.y + dy;
+    if (nx < 0 || ny < 0 || nx >= GRID_COLS || ny >= GRID_ROWS) return true;
+    if (!squareAt(nx, ny)) return true;
+  }
+  return false;
+}
+
+// Tiles that can hold NO accessories at all.
+export function tileBlocksAccessories(sq) {
+  if (!sq) return true;
+  if (sq.type === 'adventure' || sq.type === 'slip') return true; // adventure & slip 'n slide
+  if (sq.type === 'twostory' && (sq.config.top === 'xtrahighdive' || sq.config.top === 'zipline')) return true; // high-dive / zipline top
+  if (ziplineStationKind(sq)) return true; // any zipline-station tile
+  return false;
+}
+
+// Can a given accessory be placed on this tile? (plus a reason when it can't.)
+export function accessoryAllowed(accId, sq) {
+  if (!sq) return false;
+  if (tileBlocksAccessories(sq)) return false;
+  if (WATERSPORTS_ONLY.includes(accId)) return sq.type === 'watersports';
+  if (accId === 'docking') return hasWaterSideAccess(sq);
+  return true;
+}
+
+export function accessoryBlockReason(accId, sq) {
+  if (tileBlocksAccessories(sq)) return 'No accessories allowed on this tile.';
+  if (WATERSPORTS_ONLY.includes(accId)) return 'Watersports tiles only.';
+  if (accId === 'docking') return 'Needs open water on a side.';
+  return '';
+}
+
+export const tileAccessories = (sq) => (sq && sq.config && sq.config.accessories) || {};
+export const hasRoof = (sq) => !!tileAccessories(sq).roof;
+export const roofedSquares = () => design.squares.filter(hasRoof);
+export const tileItemCount = (sq) => Object.values(tileAccessories(sq)).reduce((a, b) => a + b, 0);
+
+// Add (delta>0) or remove (delta<0) `accId` on a specific square, honouring rules.
+export function placeAccessory(squareId, accId, delta) {
   if (readOnly) return;
-  const n = Math.max(0, Math.min(99, Math.round(count)));
-  if (n === 0) delete design.accessories[id];
-  else design.accessories[id] = n;
+  const sq = squareById(squareId);
+  if (!sq) return;
+  if (delta > 0 && !accessoryAllowed(accId, sq)) return;
+  const acc = { ...tileAccessories(sq) };
+  const max = accId === 'roof' ? 1 : 20;
+  const n = Math.max(0, Math.min(max, (acc[accId] || 0) + delta));
+  if (n === 0) delete acc[accId];
+  else acc[accId] = n;
+  sq.config = { ...sq.config, accessories: acc };
   save();
 }
 
-export function toggleRoof(squareId) {
-  const sq = squareById(squareId);
-  if (!sq || sq.locked) return; // roofs go on your own squares, not the anchor
-  updateSquareConfig(squareId, { roof: !sq.config.roof });
+// Totals across every tile, for the build sheet.
+export function allAccessoryTotals() {
+  const totals = {};
+  for (const sq of design.squares) {
+    for (const [id, n] of Object.entries(tileAccessories(sq))) {
+      totals[id] = (totals[id] || 0) + n;
+    }
+  }
+  return totals;
 }
 
-export const roofedSquares = () => design.squares.filter((s) => s.config && s.config.roof);
-
-// Total accessory cost: counted items + one Roof price per roofed tile.
 export function accessoriesPrice() {
   let total = 0;
-  for (const [id, count] of Object.entries(design.accessories || {})) {
-    total += (accessoryById(id)?.price || 0) * count;
+  for (const [id, n] of Object.entries(allAccessoryTotals())) {
+    total += (accessoryById(id)?.price || 0) * n;
   }
-  total += roofedSquares().length * ROOF.price;
   return total;
 }
 

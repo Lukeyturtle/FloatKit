@@ -21,9 +21,8 @@ function fromB64Url(s) {
 export function encodeDesign(design) {
   const slim = {
     anchor: design.anchor,
-    squares: design.squares,
+    squares: design.squares, // accessories & roofs live in each square's config
     connectors: design.connectors,
-    accessories: design.accessories || {},
   };
   return toB64Url(JSON.stringify(slim));
 }
@@ -36,7 +35,6 @@ export function decodeDesign(str) {
       anchor: obj.anchor ?? null,
       squares: obj.squares,
       connectors: Array.isArray(obj.connectors) ? obj.connectors : [],
-      accessories: obj.accessories && typeof obj.accessories === 'object' ? obj.accessories : {},
     };
   } catch (e) {
     return null;

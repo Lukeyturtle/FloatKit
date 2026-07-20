@@ -183,8 +183,11 @@ export const ACCESSORIES = [
   { id: 'shower', name: 'Shower', icon: '🚿', price: 220, blurb: 'Rinse-off deck shower.' },
 ];
 
-// The Roof is placed on a specific tile (stored as sq.config.roof), not counted.
-export const ROOF = { id: 'roof', name: 'Roof / cabana', icon: '⛺', price: 240, blurb: 'Shade canopy — tap any tile to add one.' };
+// The Roof is placed on a specific tile, like every other accessory now.
+export const ROOF = { id: 'roof', name: 'Roof / cabana', icon: '⛺', price: 240, blurb: 'Shade canopy — goes on any tile.' };
+
+// Accessories restricted to Watersports tiles.
+export const WATERSPORTS_ONLY_IDS = ['kayak', 'paddleboard', 'paddle', 'donut'];
 
 export const accessoryById = (id) =>
   ACCESSORIES.find((a) => a.id === id) || (id === ROOF.id ? ROOF : null);

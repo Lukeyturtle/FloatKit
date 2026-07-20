@@ -112,6 +112,7 @@ export function platformPreview(opts = {}) {
           [
             h('span', { class: 'tile-icon' }, squareGlyph(sq)),
             h('span', { class: 'tile-name' }, squareLabel(sq)),
+            sq.config && sq.config.roof && h('span', { class: 'roof-badge', title: 'Roof / cabana' }, '⛺'),
           ]
         );
         if (opts.selectedId === sq.id) tile.classList.add('selected');
@@ -273,6 +274,10 @@ export function downloadPNG(filename = 'my-floatkit-platform.png') {
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = 'rgba(20,40,60,0.85)';
     ctx.fillText(squareShortLabel(sq), x + w / 2, y + w - 14);
+    if (sq.config && sq.config.roof) {
+      ctx.font = '18px serif';
+      ctx.fillText('⛺', x + w - 12, y + 12);
+    }
   }
 
   // caption

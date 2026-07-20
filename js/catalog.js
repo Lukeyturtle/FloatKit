@@ -168,6 +168,27 @@ export const CONNECTORS = [
   { id: 'swim', name: 'Swim', icon: '🏊', price: 140, blurb: 'A ladder into the water on both squares — swim across.' },
 ];
 
+// Accessories added on the dedicated Accessories step. All are "counted"
+// (quantity per platform) except the Roof, which is placed onto a chosen tile.
+export const ACCESSORIES = [
+  { id: 'kayak', name: 'Kayak', icon: '🛶', price: 320, blurb: 'Single sit-on-top kayak.' },
+  { id: 'paddleboard', name: 'Paddle board', icon: '🏄', price: 280, blurb: 'Stand-up paddle board.' },
+  { id: 'paddle', name: 'Kayak / paddle-board paddle', icon: '🚣', price: 60, blurb: 'Spare paddle.' },
+  { id: 'donut', name: 'Donut inflatable', icon: '🍩', price: 90, blurb: 'Towable donut float.' },
+  { id: 'wifi', name: 'Wi-Fi', icon: '📶', price: 150, blurb: 'Floating Wi-Fi hotspot.' },
+  { id: 'docking', name: 'Docking station', icon: '🚢', price: 400, blurb: 'Dock for boats & jet-skis.' },
+  { id: 'fridge', name: 'Mini fridge', icon: '🧊', price: 260, blurb: 'Weatherproof mini fridge.' },
+  { id: 'power', name: 'Waterproof power station', icon: '🔋', price: 350, blurb: 'Battery power for your gear.' },
+  { id: 'waterstation', name: 'Water station', icon: '🚰', price: 180, blurb: 'Fresh drinking-water tap.' },
+  { id: 'shower', name: 'Shower', icon: '🚿', price: 220, blurb: 'Rinse-off deck shower.' },
+];
+
+// The Roof is placed on a specific tile (stored as sq.config.roof), not counted.
+export const ROOF = { id: 'roof', name: 'Roof / cabana', icon: '⛺', price: 240, blurb: 'Shade canopy — tap any tile to add one.' };
+
+export const accessoryById = (id) =>
+  ACCESSORIES.find((a) => a.id === id) || (id === ROOF.id ? ROOF : null);
+
 // Lookup helpers
 export const squareType = (id) => (id === ANCHOR_BLOCK.id ? ANCHOR_BLOCK : SQUARE_TYPES.find((t) => t.id === id));
 export const anchorById = (id) => ANCHORS.find((a) => a.id === id);

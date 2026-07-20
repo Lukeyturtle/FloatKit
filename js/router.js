@@ -15,14 +15,16 @@ const STEP_OF = {
   relax: 2,
   twostory: 2,
   connect: 3,
-  summary: 4,
+  accessories: 4,
+  summary: 5,
 };
 
 export const STEPS = [
   { id: 1, label: 'Anchor' },
   { id: 2, label: 'Configure' },
   { id: 3, label: 'Connect' },
-  { id: 4, label: 'Review' },
+  { id: 4, label: 'Accessories' },
+  { id: 5, label: 'Review' },
 ];
 
 function paint() {

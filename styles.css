@@ -254,6 +254,7 @@ main { max-width: 1120px; margin: 0 auto; padding: 24px; }
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.7);
 }
 .tile {
+  position: relative;
   width: 100%; height: 100%;
   border-radius: 10px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -439,6 +440,32 @@ main { max-width: 1120px; margin: 0 auto; padding: 24px; }
   background: #fff; color: var(--ink);
 }
 .conn-btn.static { cursor: default; }
+
+/* ---- accessories ---- */
+.acc-list { display: flex; flex-direction: column; gap: 4px; }
+.acc-list h3 { margin: 0 0 6px; font-size: 15px; }
+.acc-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px dashed var(--line);
+}
+.acc-row:last-child { border-bottom: none; }
+.acc-icon { font-size: 22px; width: 26px; text-align: center; }
+.acc-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.acc-body strong { font-size: 14px; }
+.acc-price { font-size: 12px; color: var(--muted); }
+.acc-row.has-count { background: #fff6f3; border-radius: 8px; padding: 8px; }
+.acc-stepper { font-size: 16px; gap: 10px; }
+.acc-count-badge { font-weight: 800; color: var(--deep-2); font-size: 13px; white-space: nowrap; }
+.roof-row { background: var(--aqua-1); border-radius: 8px; padding: 8px; border-bottom: none; }
+
+/* roof badge on tiles */
+.roof-badge {
+  position: absolute;
+  top: 2px; right: 3px;
+  font-size: 12px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+}
 
 .sitefoot { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 20px 50px; }
 

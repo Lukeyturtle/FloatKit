@@ -23,6 +23,7 @@ export function encodeDesign(design) {
     anchor: design.anchor,
     squares: design.squares,
     connectors: design.connectors,
+    accessories: design.accessories || {},
   };
   return toB64Url(JSON.stringify(slim));
 }
@@ -35,6 +36,7 @@ export function decodeDesign(str) {
       anchor: obj.anchor ?? null,
       squares: obj.squares,
       connectors: Array.isArray(obj.connectors) ? obj.connectors : [],
+      accessories: obj.accessories && typeof obj.accessories === 'object' ? obj.accessories : {},
     };
   } catch (e) {
     return null;

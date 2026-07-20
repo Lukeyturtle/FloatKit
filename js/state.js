@@ -12,6 +12,9 @@ import {
   SQUARE_METERS,
   CENTER,
   ANCHOR_BLOCK,
+  ACCESSORIES,
+  ROOF,
+  accessoryById,
 } from './catalog.js';
 
 const STORAGE_KEY = 'floatkit.design.v2';
@@ -25,6 +28,7 @@ export const design = {
   anchor: null,
   squares: [], // { id, x, y, type, config }
   connectors: [], // { key, a, b, type }
+  accessories: {}, // { accessoryId: count } — the Roof lives on squares (config.roof)
   lastScreen: 'landing',
 };
 
@@ -45,6 +49,7 @@ export function save() {
         anchor: design.anchor,
         squares: design.squares,
         connectors: design.connectors,
+        accessories: design.accessories,
         lastScreen: design.lastScreen,
         _id,
       })
@@ -62,6 +67,7 @@ export function load() {
     design.anchor = data.anchor ?? null;
     design.squares = Array.isArray(data.squares) ? data.squares : [];
     design.connectors = Array.isArray(data.connectors) ? data.connectors : [];
+    design.accessories = data.accessories && typeof data.accessories === 'object' ? data.accessories : {};
     design.lastScreen = data.lastScreen ?? 'landing';
     _id = data._id ?? design.squares.length + 1;
     ensureCenterAnchor();
@@ -75,6 +81,7 @@ export function resetDesign() {
   design.anchor = null;
   design.squares = [];
   design.connectors = [];
+  design.accessories = {};
   design.lastScreen = 'landing';
   _id = 1;
   ensureCenterAnchor();
@@ -88,6 +95,7 @@ export function loadSharedDesign(obj) {
   design.anchor = obj.anchor ?? null;
   design.squares = Array.isArray(obj.squares) ? obj.squares : [];
   design.connectors = Array.isArray(obj.connectors) ? obj.connectors : [];
+  design.accessories = obj.accessories && typeof obj.accessories === 'object' ? obj.accessories : {};
   design.lastScreen = 'configure';
   _id = design.squares.length + 1;
   ensureCenterAnchor();
@@ -261,6 +269,33 @@ export function connectablePairs() {
   return pairs;
 }
 
+// ---- accessories ---------------------------------------------------------
+export function setAccessory(id, count) {
+  if (readOnly) return;
+  const n = Math.max(0, Math.min(99, Math.round(count)));
+  if (n === 0) delete design.accessories[id];
+  else design.accessories[id] = n;
+  save();
+}
+
+export function toggleRoof(squareId) {
+  const sq = squareById(squareId);
+  if (!sq || sq.locked) return; // roofs go on your own squares, not the anchor
+  updateSquareConfig(squareId, { roof: !sq.config.roof });
+}
+
+export const roofedSquares = () => design.squares.filter((s) => s.config && s.config.roof);
+
+// Total accessory cost: counted items + one Roof price per roofed tile.
+export function accessoriesPrice() {
+  let total = 0;
+  for (const [id, count] of Object.entries(design.accessories || {})) {
+    total += (accessoryById(id)?.price || 0) * count;
+  }
+  total += roofedSquares().length * ROOF.price;
+  return total;
+}
+
 // ---- pricing & stats -----------------------------------------------------
 export function squarePrice(sq) {
   const t = squareType(sq.type);
@@ -299,5 +334,6 @@ export function computeStats() {
   let price = userSquares.reduce((sum, sq) => sum + squarePrice(sq), 0);
   if (design.anchor) price += anchorById(design.anchor)?.price || 0;
   price += design.connectors.reduce((sum, c) => sum + (connectorById(c.type)?.price || 0), 0);
+  price += accessoriesPrice();
   return { count, footprint, capacity, price };
 }

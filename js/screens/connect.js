@@ -43,14 +43,14 @@ export function render(app) {
     ? wizardNav({
         onBack: () => router.go('configure'),
         backLabel: '← Back to grid',
-        onNext: () => router.go('summary'),
-        nextLabel: 'See the summary →',
+        onNext: () => router.go('accessories'),
+        nextLabel: 'See accessories →',
       })
     : wizardNav({
         onBack: () => router.go('configure'),
         backLabel: '← Back to squares',
-        onNext: () => router.go('summary'),
-        nextLabel: 'Review platform →',
+        onNext: () => router.go('accessories'),
+        nextLabel: 'Accessories →',
       });
 
   app.append(h('div', { class: 'screen' }, [head, h('div', { class: 'configure-layout' }, [board, side]), nav]));

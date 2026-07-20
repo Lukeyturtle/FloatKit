@@ -10,6 +10,7 @@ import * as adventure from './screens/adventure.js';
 import * as relax from './screens/relax.js';
 import * as twostory from './screens/twoStory.js';
 import * as connect from './screens/connect.js';
+import * as accessories from './screens/accessories.js';
 import * as summary from './screens/summary.js';
 
 router.register('landing', landing.render);
@@ -19,9 +20,10 @@ router.register('adventure', adventure.render);
 router.register('relax', relax.render);
 router.register('twostory', twostory.render);
 router.register('connect', connect.render);
+router.register('accessories', accessories.render);
 router.register('summary', summary.render);
 
-const RESUMABLE = new Set(['landing', 'anchor', 'configure', 'connect', 'summary']);
+const RESUMABLE = new Set(['landing', 'anchor', 'configure', 'connect', 'accessories', 'summary']);
 
 function normalBoot() {
   load();
